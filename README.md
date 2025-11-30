@@ -1,0 +1,2 @@
+# FactoorSharp.FacturXDocumentationParser
+Parses official FacturX documentation
