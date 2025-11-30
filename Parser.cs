@@ -47,6 +47,7 @@ namespace FactoorSharp.FacturXDocumentationParser
             element.BusinessTerm = elementDocumentation.BusinessTerm;
             element.BusinessRule = elementDocumentation.BusinessRule;
             element.Description = elementDocumentation.Description;
+            element.CiiCardinality = elementDocumentation.CiiCardinality;
             element.ProfileSupport = elementDocumentation.ProfileSupport;
         } //!_ApplyDocumentation()
 

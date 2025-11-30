@@ -19,6 +19,7 @@ namespace FactoorSharp.FacturXDocumentationParser
         public string BusinessTerm { get; internal set; }
         public string Id { get; internal set; }
         public string BusinessRule { get; internal set; }
+        public string CiiCardinality { get; internal set; }
         public Dictionary<string, string> AdditionalData { get; set; } = new Dictionary<string, string>();
     }
 }
