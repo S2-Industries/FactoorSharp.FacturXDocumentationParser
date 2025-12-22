@@ -9,19 +9,19 @@ namespace FactoorSharp.FacturXDocumentationParser
 {
     internal sealed class XsdSchemaParser
     {
-        // Map Namespace URI -> preferred prefix (aus den XSD-Dateien extrahiert)
+        // Map Namespace URI -> preferred prefix (extracted from the XSD files)
         private readonly Dictionary<string, string> _nsToPrefix = new Dictionary<string, string>();
 
-        // Parse: Erwartet eine oder mehrere Einstiegspfade. Für jeden Einstiegspfad werden
-        // die dort referenzierten Schemas rekursiv nachgeladen (xs:import / xs:include / xs:redefine).
+        // Parse: Expects one or more entry XSD paths. For each entry path,
+        // the referenced schemas are recursively loaded (xs:import / xs:include / xs:redefine).
         public List<Element> Parse(params string[] entryXsdPaths)
         {
             if (entryXsdPaths == null || entryXsdPaths.Length == 0)
             {
-                throw new ArgumentException("Mindestens ein XSD-Einstiegspfad erforderlich.", nameof(entryXsdPaths));
+                throw new ArgumentException("At least one XSD entry path is required.", nameof(entryXsdPaths));
             }
 
-            // Sammle rekursiv alle zu ladenden XSD-Dateien (resolviere schemaLocation relativ zum referenzierenden File)
+            // Collect all XSD files recursively (resolve schemaLocation relative to referencing file)
             var discoveredSchemaFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var entryPath in entryXsdPaths)
@@ -41,7 +41,7 @@ namespace FactoorSharp.FacturXDocumentationParser
                 }
             }
 
-            // Lese Prefix-Mapping aus allen gefundenen Dateien
+            // Read prefix mappings from all discovered files
             foreach (var schemaFilePath in discoveredSchemaFiles)
             {
                 _TryReadNamespacePrefixes(schemaFilePath, _nsToPrefix);
@@ -49,7 +49,7 @@ namespace FactoorSharp.FacturXDocumentationParser
 
             var schemaSet = new XmlSchemaSet();
 
-            // Füge alle Dateien dem SchemaSet hinzu
+            // Add all files to the SchemaSet
             foreach (var schemaPath in discoveredSchemaFiles)
             {
                 try
@@ -64,24 +64,23 @@ namespace FactoorSharp.FacturXDocumentationParser
                 }
                 catch
                 {
-                    // Fehler beim Einlesen einzelner Dateien nicht fatal für komplette Analyse — überspringen
+                    // Errors while loading individual files are not fatal — skip them
                 }
             }
 
             schemaSet.CompilationSettings = new XmlSchemaCompilationSettings { EnableUpaCheck = false };
             schemaSet.ValidationEventHandler += (sender, e) =>
             {
-                // Hier können Sie e.Exception protokollieren (einschließlich e.Message)
+                // You may log e.Exception here (including e.Message)
                 if (e.Severity == XmlSeverityType.Error)
                 {
-                    // Logging der Fehler, aber die Kompilierung fortsetzen
-                    // log.LogError($"XSD Compilation Error: {e.Message}");
+                    // Log the error but continue compilation
                 }
             };
 
             schemaSet.Compile();
 
-            // Map für schnellen Zugriff auf globale Typen und Groups
+            // Maps for fast access to global types and groups
             var globalTypesByName = new Dictionary<XmlQualifiedName, XmlSchemaType>();
             var globalGroupsByName = new Dictionary<XmlQualifiedName, XmlSchemaGroup>();
 
@@ -89,17 +88,26 @@ namespace FactoorSharp.FacturXDocumentationParser
             {
                 foreach (XmlSchemaObject schemaItem in schema.Items)
                 {
-                    if (schemaItem is XmlSchemaComplexType complexType && complexType.QualifiedName != null && !complexType.QualifiedName.IsEmpty && !globalTypesByName.ContainsKey(complexType.QualifiedName))
+                    if (schemaItem is XmlSchemaComplexType complexType &&
+                        complexType.QualifiedName != null &&
+                        !complexType.QualifiedName.IsEmpty &&
+                        !globalTypesByName.ContainsKey(complexType.QualifiedName))
                     {
                         globalTypesByName[complexType.QualifiedName] = complexType;
                     }
 
-                    if (schemaItem is XmlSchemaSimpleType simpleType && simpleType.QualifiedName != null && !simpleType.QualifiedName.IsEmpty && !globalTypesByName.ContainsKey(simpleType.QualifiedName))
+                    if (schemaItem is XmlSchemaSimpleType simpleType &&
+                        simpleType.QualifiedName != null &&
+                        !simpleType.QualifiedName.IsEmpty &&
+                        !globalTypesByName.ContainsKey(simpleType.QualifiedName))
                     {
                         globalTypesByName[simpleType.QualifiedName] = simpleType;
                     }
 
-                    if (schemaItem is XmlSchemaGroup group && group.QualifiedName != null && !group.QualifiedName.IsEmpty && !globalGroupsByName.ContainsKey(group.QualifiedName))
+                    if (schemaItem is XmlSchemaGroup group &&
+                        group.QualifiedName != null &&
+                        !group.QualifiedName.IsEmpty &&
+                        !globalGroupsByName.ContainsKey(group.QualifiedName))
                     {
                         globalGroupsByName[group.QualifiedName] = group;
                     }
@@ -110,6 +118,7 @@ namespace FactoorSharp.FacturXDocumentationParser
 
             foreach (XmlSchemaElement globalElement in schemaSet.GlobalElements.Values.Cast<XmlSchemaElement>())
             {
+                // IMPORTANT: each root starts with a fresh visited set
                 var rootNode = _BuildNodeFromElement(globalElement, globalTypesByName, globalGroupsByName, new HashSet<XmlQualifiedName>());
                 roots.Add(rootNode);
             }
@@ -118,8 +127,8 @@ namespace FactoorSharp.FacturXDocumentationParser
         }
 
 
-        // Rekursive Sammlung aller referenzierten Schema-Dateien (inkl. Startdatei).
-        // Es werden xs:import, xs:include und xs:redefine Elemente betrachtet.
+        // Recursive collection of all referenced schema files (including the starting file).
+        // Considers xs:import, xs:include, and xs:redefine.
         private IEnumerable<string> CollectReferencedSchemas(string startPath)
         {
             var collectedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -152,16 +161,16 @@ namespace FactoorSharp.FacturXDocumentationParser
                                 continue;
                             }
 
-                            // localName kann import/include/redefine sein, namespace muss XML Schema namespace sein
+                            // localName may be import/include/redefine; namespace must be the XML Schema namespace
                             var localName = reader.LocalName;
-                            if (!string.Equals(localName, "import", StringComparison.Ordinal) &&
-                                !string.Equals(localName, "include", StringComparison.Ordinal) &&
-                                !string.Equals(localName, "redefine", StringComparison.Ordinal))
+                            if (!string.Equals(localName, "import") &&
+                                !string.Equals(localName, "include") &&
+                                !string.Equals(localName, "redefine"))
                             {
                                 continue;
                             }
 
-                            if (!string.Equals(reader.NamespaceURI, XmlSchema.Namespace, StringComparison.Ordinal))
+                            if (!string.Equals(reader.NamespaceURI, XmlSchema.Namespace))
                             {
                                 continue;
                             }
@@ -172,31 +181,21 @@ namespace FactoorSharp.FacturXDocumentationParser
                                 continue;
                             }
 
-                            string resolvedLocation;
-                            if (Path.IsPathRooted(schemaLocation))
-                            {
-                                resolvedLocation = schemaLocation;
-                            }
-                            else
-                            {
-                                var directoryOfCurrent = Path.GetDirectoryName(fullPath) ?? string.Empty;
-                                resolvedLocation = Path.GetFullPath(Path.Combine(directoryOfCurrent, schemaLocation));
-                            }
+                            string resolvedLocation =
+                                Path.IsPathRooted(schemaLocation)
+                                    ? schemaLocation
+                                    : Path.GetFullPath(Path.Combine(Path.GetDirectoryName(fullPath) ?? "", schemaLocation));
 
                             if (File.Exists(resolvedLocation))
                             {
                                 toVisitStack.Push(resolvedLocation);
-                            }
-                            else
-                            {
-                                // Remote or missing schemaLocation — aktuell ignorieren
                             }
                         }
                     }
                 }
                 catch
                 {
-                    // Bei Fehlern lesen wir möglichst viele Dateien weiter; einzelne Dateien überspringen
+                    // Continue reading other files; skip the failing one
                 }
             }
 
@@ -204,7 +203,8 @@ namespace FactoorSharp.FacturXDocumentationParser
         } // !CollectReferencedSchemas()
 
 
-        // Liest die xmlns:prefix="uri" Deklarationen aus der Root-Element-Attribute-Liste einer XSD-Datei
+
+        // Reads xmlns:prefix="uri" declarations from the root element's attributes of an XSD file
         private static void _TryReadNamespacePrefixes(string path, IDictionary<string, string> map)
         {
             try
@@ -214,7 +214,6 @@ namespace FactoorSharp.FacturXDocumentationParser
                     var settings = new XmlReaderSettings { DtdProcessing = DtdProcessing.Prohibit };
                     using (var reader = XmlReader.Create(fileStream, settings))
                     {
-                        // Auf das Root-Element warten
                         while (reader.Read())
                         {
                             if (reader.NodeType != XmlNodeType.Element)
@@ -230,20 +229,20 @@ namespace FactoorSharp.FacturXDocumentationParser
                             for (int attributeIndex = 0; attributeIndex < reader.AttributeCount; attributeIndex++)
                             {
                                 reader.MoveToAttribute(attributeIndex);
-                                var attributeName = reader.Name;     // z.B. "xmlns:ram" oder "xmlns"
-                                var attributeValue = reader.Value;   // Namespace URI
+                                var attributeName = reader.Name;
+                                var attributeValue = reader.Value;
 
-                                if (attributeName.StartsWith("xmlns:", StringComparison.Ordinal))
+                                if (attributeName.StartsWith("xmlns:"))
                                 {
                                     var prefix = attributeName.Substring("xmlns:".Length);
-                                    if (!string.IsNullOrEmpty(attributeValue) && !map.ContainsKey(attributeValue))
+                                    if (!map.ContainsKey(attributeValue))
                                     {
                                         map[attributeValue] = prefix;
                                     }
                                 }
                                 else if (attributeName == "xmlns")
                                 {
-                                    if (!string.IsNullOrEmpty(attributeValue) && !map.ContainsKey(attributeValue))
+                                    if (!map.ContainsKey(attributeValue))
                                     {
                                         map[attributeValue] = string.Empty;
                                     }
@@ -257,11 +256,13 @@ namespace FactoorSharp.FacturXDocumentationParser
             }
             catch
             {
-                // Fehler beim Lesen der Prefixes nicht kritisch für die Ausgabe
+                // Not critical for output
             }
         }
 
-        // Die übrigen Methoden (_GetCardinality, _BuildNodeFromElement, _ProcessParticle, _PrefixedName) bleiben unverändert.
+
+
+        // Returns X..Y cardinality range text
         private static string _GetCardinality(XmlSchemaElement element)
         {
             try
@@ -277,14 +278,7 @@ namespace FactoorSharp.FacturXDocumentationParser
                 else
                 {
                     decimal maxDec = element.MaxOccurs;
-                    if (maxDec == decimal.MaxValue)
-                    {
-                        max = "*";
-                    }
-                    else
-                    {
-                        max = ((long)maxDec).ToString();
-                    }
+                    max = maxDec == decimal.MaxValue ? "*" : ((long)maxDec).ToString();
                 }
 
                 return $"{min}..{max}";
@@ -296,17 +290,18 @@ namespace FactoorSharp.FacturXDocumentationParser
         } // !_GetCardinality()
 
 
-        private Element _BuildNodeFromElement(XmlSchemaElement element, IDictionary<XmlQualifiedName, XmlSchemaType> globalTypes, IDictionary<XmlQualifiedName, XmlSchemaGroup> globalGroups, HashSet<XmlQualifiedName> visitedTypes)
+
+        private Element _BuildNodeFromElement(XmlSchemaElement element,
+            IDictionary<XmlQualifiedName, XmlSchemaType> globalTypes,
+            IDictionary<XmlQualifiedName, XmlSchemaGroup> globalGroups,
+            HashSet<XmlQualifiedName> visitedTypes)
         {
             var nameQualified = !element.RefName.IsEmpty
                 ? element.RefName
                 : !element.QualifiedName.IsEmpty
                     ? element.QualifiedName
-                    : new XmlQualifiedName(element.Name ?? string.Empty, element.QualifiedName.Namespace);
+                    : new XmlQualifiedName(element.Name ?? "", element.QualifiedName.Namespace);
 
-            // at this point, the nameQualified contains a name with the
-            // full namespace as prefix. We want to replace this
-            // with the preferred prefix from the _nsToPrefix map.
             string displayName = _PrefixedName(nameQualified);
 
             string displayType = string.Empty;
@@ -314,7 +309,8 @@ namespace FactoorSharp.FacturXDocumentationParser
             {
                 displayType = _PrefixedName(element.SchemaTypeName);
             }
-            else if (element.SchemaType != null && element.SchemaType.QualifiedName != null && !element.SchemaType.QualifiedName.IsEmpty)
+            else if (element.SchemaType?.QualifiedName != null &&
+                     !element.SchemaType.QualifiedName.IsEmpty)
             {
                 displayType = _PrefixedName(element.SchemaType.QualifiedName);
             }
@@ -327,14 +323,20 @@ namespace FactoorSharp.FacturXDocumentationParser
             };
 
             XmlSchemaType resolvedType = element.SchemaType;
-            if ((resolvedType == null) && (element.SchemaTypeName != null) && !element.SchemaTypeName.IsEmpty)
+            if (resolvedType == null &&
+                element.SchemaTypeName != null &&
+                !element.SchemaTypeName.IsEmpty)
             {
                 globalTypes.TryGetValue(element.SchemaTypeName, out resolvedType);
             }
 
             if (resolvedType is XmlSchemaComplexType complex)
             {
-                var typeQName = resolvedType.QualifiedName ?? (element.SchemaTypeName ?? new XmlQualifiedName(string.Empty, string.Empty));
+                var typeQName = resolvedType.QualifiedName ??
+                                element.SchemaTypeName ??
+                                new XmlQualifiedName("", "");
+
+                // Prevent only true recursive cycles.
                 if (!typeQName.IsEmpty && visitedTypes.Contains(typeQName))
                 {
                     return node;
@@ -345,17 +347,22 @@ namespace FactoorSharp.FacturXDocumentationParser
                     visitedTypes.Add(typeQName);
                 }
 
-                // **Wir müssen HIER eine Kopie für den Abstieg in diesen Typ anlegen**, 
-                // falls ein anderes Element (Geschwister) später diesen Typ referenziert
+                // Descend into children with a COPY of visited types
                 var nextVisited = new HashSet<XmlQualifiedName>(visitedTypes);
-                _ProcessParticle(complex.ContentTypeParticle, node, globalTypes, globalGroups, nextVisited);
+                _ProcessParticle(complex.ContentTypeParticle, node,
+                    globalTypes, globalGroups, nextVisited);
             }
 
             return node;
         } // !_BuildNodeFromElement()
 
 
-        private void _ProcessParticle(XmlSchemaParticle particle, Element parent, IDictionary<XmlQualifiedName, XmlSchemaType> globalTypes, IDictionary<XmlQualifiedName, XmlSchemaGroup> globalGroups, HashSet<XmlQualifiedName> visitedTypes)
+
+        private void _ProcessParticle(XmlSchemaParticle particle,
+            Element parent,
+            IDictionary<XmlQualifiedName, XmlSchemaType> globalTypes,
+            IDictionary<XmlQualifiedName, XmlSchemaGroup> globalGroups,
+            HashSet<XmlQualifiedName> visitedTypes)
         {
             if (particle == null)
             {
@@ -368,17 +375,25 @@ namespace FactoorSharp.FacturXDocumentationParser
                 {
                     if (sequenceItem is XmlSchemaElement childElement)
                     {
-                        parent.Children.Add(_BuildNodeFromElement(childElement, globalTypes, globalGroups, visitedTypes));
+                        // FIX: siblings get their own visitedTypes copy
+                        parent.Children.Add(
+                            _BuildNodeFromElement(childElement, globalTypes, globalGroups,
+                                new HashSet<XmlQualifiedName>(visitedTypes))
+                        );
                     }
                     else if (sequenceItem is XmlSchemaChoice choice)
                     {
-                        _ProcessParticle(choice, parent, globalTypes, globalGroups, visitedTypes);
+                        _ProcessParticle(choice, parent, globalTypes, globalGroups,
+                            new HashSet<XmlQualifiedName>(visitedTypes)); // FIX
                     }
                     else if (sequenceItem is XmlSchemaGroupRef groupRef)
                     {
-                        if (!groupRef.RefName.IsEmpty && globalGroups.TryGetValue(groupRef.RefName, out var group) && group.Particle != null)
+                        if (!groupRef.RefName.IsEmpty &&
+                            globalGroups.TryGetValue(groupRef.RefName, out var group) &&
+                            group.Particle != null)
                         {
-                            _ProcessParticle(group.Particle, parent, globalTypes, globalGroups, visitedTypes);
+                            _ProcessParticle(group.Particle, parent, globalTypes, globalGroups,
+                                new HashSet<XmlQualifiedName>(visitedTypes)); // FIX
                         }
                     }
                 }
@@ -392,13 +407,20 @@ namespace FactoorSharp.FacturXDocumentationParser
                 {
                     if (choiceItem is XmlSchemaElement choiceElement)
                     {
-                        parent.Children.Add(_BuildNodeFromElement(choiceElement, globalTypes, globalGroups, new HashSet<XmlQualifiedName>(visitedTypes)));
+                        // FIX: separate visitedTypes for each choice option
+                        parent.Children.Add(
+                            _BuildNodeFromElement(choiceElement, globalTypes, globalGroups,
+                                new HashSet<XmlQualifiedName>(visitedTypes))
+                        );
                     }
                     else if (choiceItem is XmlSchemaGroupRef groupRef)
                     {
-                        if (!groupRef.RefName.IsEmpty && globalGroups.TryGetValue(groupRef.RefName, out var group) && group.Particle != null)
+                        if (!groupRef.RefName.IsEmpty &&
+                            globalGroups.TryGetValue(groupRef.RefName, out var group) &&
+                            group.Particle != null)
                         {
-                            _ProcessParticle(group.Particle, parent, globalTypes, globalGroups, visitedTypes);
+                            _ProcessParticle(group.Particle, parent, globalTypes, globalGroups,
+                                new HashSet<XmlQualifiedName>(visitedTypes)); // FIX
                         }
                     }
                 }
@@ -412,17 +434,25 @@ namespace FactoorSharp.FacturXDocumentationParser
                 {
                     if (groupItem is XmlSchemaElement child)
                     {
-                        parent.Children.Add(_BuildNodeFromElement(child, globalTypes, globalGroups, new HashSet<XmlQualifiedName>(visitedTypes)));
+                        // FIX: separate visitedTypes for each group element
+                        parent.Children.Add(
+                            _BuildNodeFromElement(child, globalTypes, globalGroups,
+                                new HashSet<XmlQualifiedName>(visitedTypes))
+                        );
                     }
                     else if (groupItem is XmlSchemaChoice choice)
                     {
-                        _ProcessParticle(choice, parent, globalTypes, globalGroups, visitedTypes);
+                        _ProcessParticle(choice, parent, globalTypes, globalGroups,
+                            new HashSet<XmlQualifiedName>(visitedTypes)); // FIX
                     }
                     else if (groupItem is XmlSchemaGroupRef groupRef)
                     {
-                        if (!groupRef.RefName.IsEmpty && globalGroups.TryGetValue(groupRef.RefName, out var group) && group.Particle != null)
+                        if (!groupRef.RefName.IsEmpty &&
+                            globalGroups.TryGetValue(groupRef.RefName, out var group) &&
+                            group.Particle != null)
                         {
-                            _ProcessParticle(group.Particle, parent, globalTypes, globalGroups, visitedTypes);
+                            _ProcessParticle(group.Particle, parent, globalTypes, globalGroups,
+                                new HashSet<XmlQualifiedName>(visitedTypes)); // FIX
                         }
                     }
                 }
@@ -432,7 +462,8 @@ namespace FactoorSharp.FacturXDocumentationParser
         } // !_ProcessParticle()
 
 
-        // Liefert "prefix:LocalName" wenn ein Prefix für die Namespace-URI existiert, sonst LocalName.
+
+        // Returns "prefix:LocalName" if a prefix exists, otherwise LocalName.
         private string _PrefixedName(XmlQualifiedName qname)
         {
             if (qname == null || string.IsNullOrEmpty(qname.Name))
@@ -467,7 +498,7 @@ namespace FactoorSharp.FacturXDocumentationParser
             }
             catch
             {
-                // Fallback weiter unten
+                // fallback below
             }
 
             return qname.Name;
