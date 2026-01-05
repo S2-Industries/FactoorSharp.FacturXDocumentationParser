@@ -87,13 +87,13 @@ namespace FactoorSharp.FacturXDocumentationParser
                 var row = (IDictionary<string, object>)rows[r];
 
                 // Wenn alle Zellen D–W leer sind → Ende.
-                bool isEmpty = Enumerable.Range(3, 20)
+                bool isEmpty = Enumerable.Range(4, 21)
                     .All(i => string.IsNullOrWhiteSpace(row.Values.ElementAt(i)?.ToString()));
 
                 if (isEmpty)
                     break;
 
-                var values = Enumerable.Range(3, 20)
+                var values = Enumerable.Range(4, 21)
                     .Select(i => row.Values.ElementAt(i))
                     .ToList();
 
