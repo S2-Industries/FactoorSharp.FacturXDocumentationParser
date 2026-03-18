@@ -17,8 +17,9 @@
  * under the License.
  */
 using System.Collections.Generic;
+using FactoorSharp.FacturXDocumentationParser.Common;
 
-namespace FactoorSharp.FacturXDocumentationParser
+namespace FactoorSharp.FacturXDocumentationParser.XRechnung3
 {
     /// <summary>
     /// Represents the full extracted documentation of the XRechnung specification.

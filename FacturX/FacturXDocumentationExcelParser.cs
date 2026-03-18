@@ -24,9 +24,10 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using FactoorSharp.FacturXDocumentationParser.Common;
 using MiniExcelLibs;
 
-namespace FactoorSharp.FacturXDocumentationParser
+namespace FactoorSharp.FacturXDocumentationParser.FacturX
 {
     /// <summary>
     /// Reads the worksheet "Factur-X CII D22B EXTENDED" with MiniExcel and returns a list of <see cref="FacturXElementDocumentation"/>.

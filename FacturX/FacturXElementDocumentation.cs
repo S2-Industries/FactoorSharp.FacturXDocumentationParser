@@ -20,8 +20,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using FactoorSharp.FacturXDocumentationParser.Common;
 
-namespace FactoorSharp.FacturXDocumentationParser
+namespace FactoorSharp.FacturXDocumentationParser.FacturX
 {
     /// <summary>
     /// Represents a row from the "Factur-X CII D22B EXTENDED" sheet.

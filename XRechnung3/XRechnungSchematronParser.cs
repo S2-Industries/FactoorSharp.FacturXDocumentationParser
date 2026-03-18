@@ -24,7 +24,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 
-namespace FactoorSharp.FacturXDocumentationParser
+namespace FactoorSharp.FacturXDocumentationParser.XRechnung3
 {
     /// <summary>
     /// Parses XRechnung Schematron (.sch) files and extracts all business rules.

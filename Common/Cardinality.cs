@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace FactoorSharp.FacturXDocumentationParser
+namespace FactoorSharp.FacturXDocumentationParser.Common
 {
     public class Cardinality
     {

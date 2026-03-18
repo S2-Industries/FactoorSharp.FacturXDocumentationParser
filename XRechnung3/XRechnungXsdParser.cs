@@ -22,8 +22,9 @@ using System.IO;
 using System.Linq;
 using System.Xml;
 using System.Xml.Linq;
+using FactoorSharp.FacturXDocumentationParser.Common;
 
-namespace FactoorSharp.FacturXDocumentationParser
+namespace FactoorSharp.FacturXDocumentationParser.XRechnung3
 {
     /// <summary>
     /// Generic XSD parser that extracts the element hierarchy and cardinalities

@@ -23,8 +23,9 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using FactoorSharp.FacturXDocumentationParser.Common;
 
-namespace FactoorSharp.FacturXDocumentationParser
+namespace FactoorSharp.FacturXDocumentationParser.XRechnung3
 {
     /// <summary>
     /// Syntax binding that controls which XSD schema and schematron rules are extracted.

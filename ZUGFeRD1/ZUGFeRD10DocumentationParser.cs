@@ -22,8 +22,9 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using FactoorSharp.FacturXDocumentationParser.Common;
 
-namespace FactoorSharp.FacturXDocumentationParser
+namespace FactoorSharp.FacturXDocumentationParser.ZUGFeRD1
 {
     /// <summary>
     /// Reads ZUGFeRD / Factur-X XML schema files (XSD + Schematron) and builds a

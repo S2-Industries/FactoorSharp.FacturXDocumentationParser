@@ -20,7 +20,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace FactoorSharp.FacturXDocumentationParser
+namespace FactoorSharp.FacturXDocumentationParser.Common
 {
     [DebuggerDisplay("{Name}, XPath: {XPath}")]
     public sealed class Element

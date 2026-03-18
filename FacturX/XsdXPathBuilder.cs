@@ -19,9 +19,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using FactoorSharp.FacturXDocumentationParser.Common;
 
 
-namespace FactoorSharp.FacturXDocumentationParser
+namespace FactoorSharp.FacturXDocumentationParser.FacturX
 {
     internal static class XsdXPathBuilder
     {

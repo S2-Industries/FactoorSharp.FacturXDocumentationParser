@@ -21,10 +21,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using FactoorSharp.FacturXDocumentationParser.Common;
 
-namespace FactoorSharp.FacturXDocumentationParser
+namespace FactoorSharp.FacturXDocumentationParser.FacturX
 {
-    public class Parser
+    public class FacturXParser
     {
         public static async Task<List<Element>> ParseAsync(string xsdPath, string excelPath)
         {
