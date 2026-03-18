@@ -1,4 +1,22 @@
-﻿using System;
+﻿/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -11,7 +29,7 @@ using MiniExcelLibs;
 namespace FactoorSharp.FacturXDocumentationParser
 {
     /// <summary>
-    /// Reads the worksheet "Factur-X CII D22B EXTENDED" with MiniExcel and returns a list of <see cref="ElementDocumentation"/>.
+    /// Reads the worksheet "Factur-X CII D22B EXTENDED" with MiniExcel and returns a list of <see cref="FacturXElementDocumentation"/>.
     /// Reading starts after the row that contains "EN16931 Semantic Cardinality" in any column.
     /// </summary>
     internal sealed class DocumentationExcelParser
@@ -27,14 +45,14 @@ namespace FactoorSharp.FacturXDocumentationParser
         };
 
 
-        public static async Task<IReadOnlyList<ElementDocumentation>> ParseAsync(string excelFilePath)
+        public static async Task<IReadOnlyList<FacturXElementDocumentation>> ParseAsync(string excelFilePath)
         {
-            var profileDataMap = new Dictionary<string, IReadOnlyList<ElementDocumentation>>();
+            var profileDataMap = new Dictionary<string, IReadOnlyList<FacturXElementDocumentation>>();
 
             // read all available profile tabs and mark support in the main list
             foreach (KeyValuePair<string, string> profileWorksheet in _WorksheetNames)
             {
-                IReadOnlyList<ElementDocumentation> elements =
+                IReadOnlyList<FacturXElementDocumentation> elements =
                     await _ParseAsync(excelFilePath, profileWorksheet.Value);
 
                 profileDataMap[profileWorksheet.Key] = elements;
@@ -42,17 +60,17 @@ namespace FactoorSharp.FacturXDocumentationParser
 
             if (!_WorksheetNames.ContainsKey(_DefaultProfile))
             {
-                return new List<ElementDocumentation>();
+                return new List<FacturXElementDocumentation>();
             }
 
             // use default profile as the base, seek in the other profile tabs
             // if the respective element is supported and add it to ProfileSupport dictionary
-            IReadOnlyList<ElementDocumentation> result = profileDataMap[_DefaultProfile];
-            foreach(KeyValuePair<string, IReadOnlyList<ElementDocumentation>> profileEntry in profileDataMap)
+            IReadOnlyList<FacturXElementDocumentation> result = profileDataMap[_DefaultProfile];
+            foreach(KeyValuePair<string, IReadOnlyList<FacturXElementDocumentation>> profileEntry in profileDataMap)
             {
                 var profileLookup = profileEntry.Value.ToLookup(e => e.XpathXmlNorme1); // O(N) Erstellung
 
-                foreach (ElementDocumentation element in result) // Iteration over default list (EXTENDED)
+                foreach (FacturXElementDocumentation element in result) // Iteration over default list (EXTENDED)
                 {
                     if (profileLookup.Contains(element.XpathXmlNorme1))
                     {
@@ -65,7 +83,7 @@ namespace FactoorSharp.FacturXDocumentationParser
         } // !ParseAsync()
 
 
-        private static async Task<IReadOnlyList<ElementDocumentation>> _ParseAsync(string excelFilePath, string worksheetName)
+        private static async Task<IReadOnlyList<FacturXElementDocumentation>> _ParseAsync(string excelFilePath, string worksheetName)
         {
 
             if (string.IsNullOrWhiteSpace(excelFilePath))
@@ -78,7 +96,7 @@ namespace FactoorSharp.FacturXDocumentationParser
                 throw new FileNotFoundException("Excel file not found.", excelFilePath);
             }
 
-            List<ElementDocumentation> result = new List<ElementDocumentation>();
+            List<FacturXElementDocumentation> result = new List<FacturXElementDocumentation>();
 
             var rows = MiniExcel.Query(excelFilePath, sheetName: worksheetName).ToList();
             for (int r = 4; r < rows.Count; r++)
@@ -105,16 +123,16 @@ namespace FactoorSharp.FacturXDocumentationParser
         } //!_ParseAsync()
 
 
-        private static ElementDocumentation _MapRow(IEnumerable<object> row)
+        private static FacturXElementDocumentation _MapRow(IEnumerable<object> row)
         {
             List<string> stringValues = row.Select(r => r?.ToString()).ToList();
 
-            ElementDocumentation result = new ElementDocumentation()
+            FacturXElementDocumentation result = new FacturXElementDocumentation()
             {
                 Id = stringValues[1],
                 IdCtcFrReform = stringValues[2],
                 XsdLevel = stringValues[3],
-                En16931SemanticCardinality = stringValues[4],
+                En16931SemanticCardinality = Cardinality.FromString(stringValues[4]),
                 BusinessTerm = stringValues[5],
                 Description = stringValues[6],
                 UsageNote = stringValues[7],
@@ -122,12 +140,12 @@ namespace FactoorSharp.FacturXDocumentationParser
                 BusinessRule = stringValues[9],
                 SemanticDataType = stringValues[10],
                 //
-                ExtProfilesCardinality = stringValues[12],
+                ExtProfilesCardinality = Cardinality.FromString(stringValues[12]),
                 XpathXmlNorme1 = stringValues[13],
                 XpathXmlNorme2 = stringValues[14],
                 Dt = stringValues[15],
                 Type = stringValues[16],
-                CiiCardinality = stringValues[17],
+                CiiCardinality = Cardinality.FromString(stringValues[17]),
                 Match = stringValues[18],
                 Rules = stringValues[19]
             };
